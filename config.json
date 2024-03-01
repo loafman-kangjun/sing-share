@@ -1,0 +1,19 @@
+{
+    "inbounds": [
+        {
+            "type": "shadowsocks",
+            "tag": "shadowsocks-in",
+            "listen": "127.0.0.1",
+            "method": "2022-blake3-aes-128-gcm",
+            "password": "YWVzLTEyOC1nY206aGFNTE1YaXJCeW42ckdWaA==",
+            "multiplex": {
+                "enabled": true
+            }
+        }
+    ],
+    "outbounds": [
+        {
+            "type": "direct"
+        }
+    ]
+}
