@@ -2,7 +2,6 @@ package main
 
 import (
     "context"
-    "fmt"
     "os"
     "os/signal"
     "syscall"
@@ -29,7 +28,6 @@ func readConfig() (option.Options, error) {
     if err != nil {
         return opts, err
     }
-    fmt.Println(opts)
     return opts, nil
 }
 
