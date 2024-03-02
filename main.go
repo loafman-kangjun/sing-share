@@ -1,72 +1,78 @@
 package main
 
 import (
-	"context"
-	"os"
-	"os/signal"
-	"syscall"
+    "context"
+    "fmt"
+    "os"
+    "os/signal"
+    "syscall"
 
-	"github.com/sagernet/sing-box"
-	"github.com/sagernet/sing-box/log"
-	"github.com/sagernet/sing-box/option"
-	"github.com/sagernet/sing/common/json"
+    "github.com/sagernet/sing-box"
+    "github.com/sagernet/sing-box/log"
+    "github.com/sagernet/sing-box/option"
+    "github.com/sagernet/sing/common/json"
 )
 
 func main() {
-	if err := run(); err != nil {
-		log.Fatal(err)
-	}
+    if err := run(); err != nil {
+        log.Fatal(err)
+    }
 }
 
 func readConfig() (option.Options, error) {
-	var opts option.Options
-	configContent, err := os.ReadFile("config.json")
-	if err != nil {
-		return opts, err
-	}
-	err = json.Unmarshal(configContent, &opts)
-	return opts, err
-}
-
-func create(ctx context.Context) (*box.Box, error) {
-	opts, err := readConfig()
-	if err != nil {
-		return nil, err
-	}
-	return box.New(box.Options{
-		Context: ctx,
-		Options: opts,
-	})
+    var opts option.Options
+    configContent, err := os.ReadFile("config.json")
+    if err != nil {
+        return opts, err
+    }
+    err = json.Unmarshal(configContent, &opts)
+    if err != nil {
+        return opts, err
+    }
+    fmt.Println(opts)
+    return opts, nil
 }
 
 func run() error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+    // 创建一个可以被取消的上下文
+    ctx, cancel := context.WithCancel(context.Background())
+    defer cancel()
 
-	instance, err := create(ctx)
-	if err != nil {
-		return err
-	}
+    // 读取配置文件
+    opts, err := readConfig()
+    if err != nil {
+        return err
+    }
 
-	// Setup signal handling
-	osSignals := make(chan os.Signal, 1)
-	signal.Notify(osSignals, syscall.SIGINT, syscall.SIGTERM)
-	defer signal.Stop(osSignals)
+    // 创建一个新的sing-box实例
+    instance, err := box.New(box.Options{
+        Context: ctx,
+        Options: opts,
+    })
+    if err != nil {
+        return err
+    }
 
-	go func() {
-		<-osSignals
-		cancel() // Signal the context to cancel
-		if err := instance.Close(); err != nil {
-			log.Error("Failed to close sing-box:", err)
-		}
-	}()
+    // 设置操作系统信号处理
+    osSignals := make(chan os.Signal, 1)
+    signal.Notify(osSignals, syscall.SIGINT, syscall.SIGTERM)
+    defer signal.Stop(osSignals)
 
-	if err := instance.Start(); err != nil {
-		return err
-	}
+    go func() {
+        <-osSignals
+        cancel() // 当接收到信号时取消上下文
+        if err := instance.Close(); err != nil {
+            log.Error("Failed to close sing-box:", err)
+        }
+    }()
 
-	// Wait for the context to be cancelled, indicating signal received
-	<-ctx.Done()
-	log.Info("Shutting down gracefully...")
-	return nil
+    // 启动sing-box实例
+    if err := instance.Start(); err != nil {
+        return err
+    }
+
+    // 等待上下文被取消，表明收到了信号
+    <-ctx.Done()
+    log.Info("Shutting down gracefully...")
+    return nil
 }
