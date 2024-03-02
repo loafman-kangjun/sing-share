@@ -47,13 +47,10 @@ func run(config []byte) error {
 	}
 
 	// 创建一个新的sing-box实例
-	instance, err := box.New(box.Options{
+	instance, _ := box.New(box.Options{
 		Context: ctx,
 		Options: opts,
 	})
-	if err != nil {
-		return err
-	}
 
 	// 设置操作系统信号处理
 	osSignals := make(chan os.Signal, 1)
