@@ -1,5 +1,7 @@
 package main
 
+// #include <stdio.h>
+import "C"
 import (
 	"context"
 	"os"
@@ -13,7 +15,7 @@ import (
 )
 
 func main() {
-    run([]byte(`{
+	cs := C.CString(`{
         "inbounds": [
             {
                 "type": "shadowsocks",
@@ -31,17 +33,21 @@ func main() {
                 "type": "direct"
             }
         ]
-    }`));
+    }`)
+    Run(cs);
 }
 
-func run(config []byte) error {
+//export Run
+func Run(input *C.char) error {
+	config := C.GoString(input)
+
 	// 创建一个可以被取消的上下文
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	// 读取配置文件
 	var opts option.Options
-	var err = json.Unmarshal(config, &opts)
+	var err = json.Unmarshal([]byte(config), &opts)
 	if err != nil {
 		return err
 	}
